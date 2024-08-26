@@ -1,59 +1,25 @@
-name: Publish
+name: Release Package
 
 on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+  release:
+    types: [created]
 
 jobs:
-  publish:
+  deploy:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
-    - name: Check out the repository
-      uses: actions/checkout@v3
-
-    - name: Set up .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Restore dependencies
-      run: dotnet restore Shonos.FluentCache/Shonos.FluentCache.csproj
-
-    - name: Get Current Version
-      id: get_version
-      run: |
-        VERSION=$(dotnet msbuild /t:GetVersion /p:Version=$(date +%Y%m%d%H%M%S) | grep 'Version' | awk '{print $2}')
-        echo "VERSION=${VERSION}" >> $GITHUB_ENV
-
-    - name: Get Last Published Version
-      id: get_last_published_version
-      run: |
-        LAST_PUBLISHED_VERSION=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-        https://api.github.com/orgs/YOUR_ORG/packages/npm/YOUR_PACKAGE_NAME/versions \
-        | jq -r '.[0].version')
-        echo "LAST_PUBLISHED_VERSION=${LAST_PUBLISHED_VERSION}" >> $GITHUB_ENV
-
-    - name: Compare Versions
-      id: compare_versions
-      run: |
-        if [ "${{ env.VERSION }}" = "${{ env.LAST_PUBLISHED_VERSION }}" ]; then
-          echo "Versions are the same. Skipping build and publish."
-          echo "skip_build=true" >> $GITHUB_ENV
-        else
-          echo "Versions differ. Proceeding with build and publish."
-          echo "skip_build=false" >> $GITHUB_ENV
-        fi
-
-    - name: Build and Pack
-      if: ${{ env.skip_build == 'false' }}
-      run: |
-        dotnet build Shonos.FluentCache/Shonos.FluentCache.csproj --configuration Release --no-restore
-        dotnet pack Shonos.FluentCache/Shonos.FluentCache.csproj --configuration Release --no-build --output ./nupkg
-
-    - name: Publish to GitHub Packages
-      if: ${{ env.skip_build == 'false' }}
-      run: |
-        dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source "github"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x' # SDK Version to use.
+          source-url: https://nuget.pkg.github.com/Shonos/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - run: dotnet build --configuration Release Shonos.FluentCache
+      - name: Create the package
+        run: dotnet pack --configuration Release Shonos.FluentCache
+      - name: Publish the package to GPR
+        run: dotnet nuget push Shonos.FluentCache/bin/Release/*.nupkg
