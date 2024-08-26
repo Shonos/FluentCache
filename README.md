@@ -10,6 +10,7 @@ To use `Shonos.FluentCache`, you need to install the package from NuGet. You can
 
 ```bash
 dotnet add package Shonos.FluentCache
+```
 
 
 ### Usage
@@ -120,6 +121,3 @@ var result = await typedCache.GetAsync("myKey");
 ## License
 
 This library is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
-```
-
-Feel free to modify or expand on this README as needed for your specific use case.
