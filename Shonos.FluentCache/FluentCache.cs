@@ -76,9 +76,17 @@ namespace Shonos.FluentCache
 
         private async Task<T?> GetAsync<TValue>(string key, CancellationToken cancellationToken = default)
         {
-            var resultInString = string.Empty;
+            string resultInString = null;
 
             resultInString = await _cache.GetStringAsync(key, cancellationToken).ConfigureAwait(false);
+
+            if (typeof(T) == typeof(string))
+            {
+                // Directly return the result as a string if T is string
+                return string.IsNullOrWhiteSpace(resultInString)
+                ? default
+                : (T)(object)resultInString;
+            }
 
             return string.IsNullOrWhiteSpace(resultInString)
                 ? default
