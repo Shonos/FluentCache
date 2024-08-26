@@ -102,14 +102,23 @@ This class implements `IFluentCache<T>` and provides methods for setting and ret
 ### Basic Usage
 
 ```csharp
-var cache = new FluentCache(myDistributedCache);
-var typedCache = cache.CreateWithOnCacheMiss(async () => await FetchDataFromDatabase());
-
-await typedCache
-    .SetAbsoluteExpirationRelativeToNow(TimeSpan.FromMinutes(10))
-    .SetSlidingExpiration(TimeSpan.FromMinutes(5))
-    .CacheIf(data => data.IsValid)
-    .SetAsync("myKey", myData);
+var forecast = await cache.CreateWithOnCacheMiss(() =>
+{
+    logger.LogInformation("Cache missed!");
+    var result = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return Task.FromResult(result);
+})
+.CacheIf(x => x != null)
+.SetAbsoluteExpirationRelativeToNow(TimeSpan.FromHours(12))
+.GetAsync(cacheKey)
+.ConfigureAwait(false);
 ```
 
 ### Retrieving Data
