@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - master
+  pull_request:
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
-  publish:
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,5 +35,6 @@ jobs:
 
     - name: Build the project
       run: dotnet build Shonos.FluentCache/Shonos.FluentCache.csproj --configuration Release --no-restore
+  
 
     
