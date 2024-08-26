@@ -1,4 +1,4 @@
-name: Publish to GitHub Packages
+name: Build and Test
 
 on:
   push:
@@ -23,8 +23,13 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build the project
-      run: dotnet build Shonos.FluentCache/Shonos.FluentCache.csproj --configuration Release --no-restore
+    - name: Build the test project
+      run: dotnet build tests/Shonos.FluentCache.Tests/Shonos.FluentCache.Tests.csproj --configuration Release --no-restore
 
     - name: Run Tests
       run: dotnet test tests/Shonos.FluentCache.Tests/Shonos.FluentCache.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    - name: Build the project
+      run: dotnet build Shonos.FluentCache/Shonos.FluentCache.csproj --configuration Release --no-restore
+
+    
