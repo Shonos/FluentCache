@@ -99,7 +99,7 @@ namespace Shonos.FluentCache.Tests
             result.Should().BeEquivalentTo(expectedObjectValue);
 
             // Verify that IDistributedCache never called SetAsync
-            _mockCache.Verify(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            _mockCache.Verify(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         protected class SampleCachedObject
