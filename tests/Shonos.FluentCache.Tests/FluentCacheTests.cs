@@ -18,7 +18,7 @@ namespace Shonos.FluentCache.Tests
         }
 
         [Fact]
-        public void CreateWithOnCacheMiss_ShouldReturnFluentCacheOfT()
+        public void CreateWithOnCacheMiss_ShouldReturnFluentCacheOfT_Int()
         {
             // Arrange
             Func<Task<int>> action = () => Task.FromResult(42);
@@ -29,6 +29,20 @@ namespace Shonos.FluentCache.Tests
             // Assert
             Assert.NotNull(result);
             Assert.IsType<FluentCache<int>>(result);
+        }
+
+        [Fact]
+        public void CreateWithOnCacheMiss_ShouldReturnFluentCacheOfT_String()
+        {
+            // Arrange
+            Func<Task<string>> action = () => Task.FromResult("hello world");
+
+            // Act
+            var result = _fluentCache.CreateWithOnCacheMiss(action);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<FluentCache<string>>(result);
         }
 
         [Fact]
@@ -71,6 +85,29 @@ namespace Shonos.FluentCache.Tests
         }
 
         [Fact]
+        public async Task GetAsync_String_CacheMiss_ReturnsValueFromOnCacheMiss()
+        {
+            // Arrange
+            var cacheKey = "test_key";
+
+            var expectedValue = "testvalue";
+
+            // Setup OnCacheMiss function
+            Func<Task<string>> onCacheMiss = () => Task.FromResult(expectedValue);
+
+            var fluentCache = new FluentCache(_mockCache.Object);
+            var typedFluentCache = fluentCache.CreateWithOnCacheMiss(onCacheMiss);
+            // Act
+            var result = await typedFluentCache.GetAsync(cacheKey);
+
+            // Assert
+            Assert.Equal(expectedValue, result);
+
+            // Verify that IDisitributedCache called Set Async
+            _mockCache.Verify(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
         public async Task GetAsync_CacheHit_ReturnsValueFromCache()
         {
             // Arrange
@@ -97,6 +134,34 @@ namespace Shonos.FluentCache.Tests
 
             // Assert
             result.Should().BeEquivalentTo(expectedObjectValue);
+
+            // Verify that IDistributedCache never called SetAsync
+            _mockCache.Verify(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetAsync_String_CacheHit_ReturnsValueFromCache()
+        {
+            // Arrange
+            var cacheKey = "test_key";
+
+            var expectedValue = "testvalue";
+
+            // Setup OnCacheMiss function
+            Func<Task<string>> onCacheMiss = () => Task.FromResult(expectedValue);
+
+            var fluentCache = new FluentCache(_mockCache.Object);
+            var typedFluentCache = fluentCache.CreateWithOnCacheMiss(onCacheMiss);
+
+            // Simulate cache hit
+            var expectedValueAsJsonAsBytes = Encoding.UTF8.GetBytes(expectedValue);
+            _mockCache.Setup(c => c.GetAsync(cacheKey, It.IsAny<CancellationToken>())).ReturnsAsync(expectedValueAsJsonAsBytes);
+
+            // Act
+            var result = await typedFluentCache.GetAsync(cacheKey);
+
+            // Assert
+            Assert.Equal(expectedValue, result);
 
             // Verify that IDistributedCache never called SetAsync
             _mockCache.Verify(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Never);
